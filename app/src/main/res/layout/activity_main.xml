@@ -15,8 +15,6 @@
     <com.jhj.zxing.weight.QRCodeView
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:grid_bottom_line_length="0.8"
-            app:grid_side_width="0"
             app:layout_constraintWidth_percent="0.5"
             app:layout_constraintDimensionRatio="w,1:1"
             app:layout_constraintBottom_toBottomOf="parent"

@@ -11,12 +11,12 @@ import com.jhj.zxing.R;
 public class QRCodeView extends View {
 
 
-    private int cornerColor;
+    private int mainColor;
     private int cornerLineWidth;
     private int cornerLineLength;
     private int sideWidth;
-    private int gridBottomLineWidth;
-    private float gridBottomLineLength;
+    private int scanLineWidth;
+    private float scanLineLength;
     private int gridSideLength;
     private int gridChangedSpeed;
     private int gridSideWidth;
@@ -44,11 +44,11 @@ public class QRCodeView extends View {
         super(context, attrs, defStyleAttr);
 
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.QRCodeView, defStyleAttr, 0);
-        cornerColor = typedArray.getColor(R.styleable.QRCodeView_main_color, Color.GREEN);
+        mainColor = typedArray.getColor(R.styleable.QRCodeView_main_color, Color.GREEN);
         cornerLineLength = typedArray.getInteger(R.styleable.QRCodeView_corner_line_length, 50);
         cornerLineWidth = typedArray.getInteger(R.styleable.QRCodeView_corner_line_width, 12);
-        gridBottomLineWidth = typedArray.getInteger(R.styleable.QRCodeView_grid_bottom_line_width, 4);
-        gridBottomLineLength = typedArray.getFloat(R.styleable.QRCodeView_grid_bottom_line_length, 1f);
+        scanLineWidth = typedArray.getInteger(R.styleable.QRCodeView_grid_bottom_line_width, 4);
+        scanLineLength = typedArray.getFloat(R.styleable.QRCodeView_grid_bottom_line_length, 1f);
         gridSideLength = typedArray.getInteger(R.styleable.QRCodeView_grid_side_length, 15);
         gridSideWidth = typedArray.getInteger(R.styleable.QRCodeView_grid_side_width, 2);
         sideWidth = typedArray.getInteger(R.styleable.QRCodeView_side_width, 4);
@@ -58,10 +58,18 @@ public class QRCodeView extends View {
         gridPath = new Path();
         mMatrix = new Matrix();
         mPaint = new Paint();
-        mColors = new int[]{Color.TRANSPARENT, cornerColor};
+        mColors = new int[]{Color.TRANSPARENT, mainColor};
         mPercent = new float[]{0.75f, 1f};
+        typedArray.recycle();
     }
 
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+
+    }
 
     @SuppressWarnings("SuspiciousNameCombination")
     @Override
@@ -71,14 +79,14 @@ public class QRCodeView extends View {
 
         //边框
         mPaint.reset();
-        mPaint.setColor(cornerColor);
+        mPaint.setColor(mainColor);
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setStrokeWidth(sideWidth);
         canvas.drawRect(0, 0, getWidth(), getHeight(), mPaint);
 
         //四角
         mPaint.reset();
-        mPaint.setColor(cornerColor);
+        mPaint.setColor(mainColor);
         cornerPath.addRect(0, cornerLineWidth, cornerLineWidth, cornerLineLength, Path.Direction.CW);
         cornerPath.addRect(0, 0, cornerLineLength, cornerLineWidth, Path.Direction.CW);
         cornerPath.addRect(getWidth() - cornerLineLength, 0, getWidth(), cornerLineWidth, Path.Direction.CW);
@@ -97,16 +105,16 @@ public class QRCodeView extends View {
             yPoint = getHeight() + mTransLate;
         }
         mPaint.reset();
-        mPaint.setColor(cornerColor);
-        int extra = (int) (getWidth() - gridBottomLineLength * getWidth());
-        canvas.drawRect(extra / 2, yPoint, getWidth() - extra / 2, yPoint + gridBottomLineWidth, mPaint);
+        mPaint.setColor(mainColor);
+        int extra = (int) (getWidth() - scanLineLength * getWidth());
+        canvas.drawRect(extra / 2, yPoint, getWidth() - extra / 2, yPoint + scanLineWidth, mPaint);
 
 
         //扫描网格
         matrixScan();
         mPaint.reset();
         mPaint.setStrokeWidth(gridSideWidth);
-        mPaint.setColor(cornerColor);
+        mPaint.setColor(mainColor);
         mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
         mPaint.setShader(mGradient);
         if (isFirstLoad) {
