@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="QRCodeView">
+        <!--扫描的主色调-->
+        <attr name="main_color" format="color"/>
+        <!-- 四角的长度-->
+        <attr name="corner_line_length" format="integer"/>
+        <!-- 四角的宽度-->
+        <attr name="corner_line_width" format="integer"/>
+        <!-- 四边的宽度-->
+        <attr name="side_width" format="integer"/>
+        <!-- 网格的边长-->
+        <attr name="grid_side_length" format="integer"/>
+        <!-- 网格的宽度（为0时，就一条扫描线）-->
+        <attr name="grid_side_width" format="integer"/>
+        <!-- 网格最底部线的宽度-->
+        <attr name="grid_bottom_line_width" format="integer"/>
+        <!-- 网格最底部线的长度，二维码长度的百分比-->
+        <attr name="grid_bottom_line_length" format="float"/>
+        <!-- 扫描变化的速度-->
+        <attr name="grid_changed_speed" format="integer"/>
+
+    </declare-styleable>
+</resources>
