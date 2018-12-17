@@ -6,7 +6,7 @@ import com.jhj.zxing.encode.EncodeAttribute
 
 object QRCode {
 
-    val attribute = EncodeAttribute()
+    private val attribute = EncodeAttribute()
 
     fun init(): EncodeAttribute {
         return attribute

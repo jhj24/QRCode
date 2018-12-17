@@ -1,11 +1,12 @@
 package com.jhj.zxing.encode
 
 import android.graphics.*
+import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
-import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.MultiFormatWriter
 import com.jhj.zxing.QRCode
 
-object QRCodeImage {
+object EncodeHelper {
 
 
     fun encode(content: String): Bitmap {
@@ -17,18 +18,19 @@ object QRCodeImage {
         val width = QRCode.getQRCodeWidth()
         val height = QRCode.getQRCodeHeight()
 
-        val pixels = IntArray(width * height)
+        // 设置编码参数
         val hints = hashMapOf<EncodeHintType, Any>()
-        //编码方式
+        // 编码方式
         hints[EncodeHintType.CHARACTER_SET] = QRCode.getHintCharacterSet()
         // 容错级别 这里选择最高H级别,默认时L级别，加LOGO可能识别不出
         hints[EncodeHintType.ERROR_CORRECTION] = QRCode.getHintErrorCorrection()
-        //设置空白边距的宽度
-        hints[EncodeHintType.MARGIN] = QRCode.getHintWhiteMargin() //default is 4
-        //数据content转换为数字矩阵
-        val bitMatrix = QRCodeWriter().encode(content, QRCode.getBarCodeFormat(), width, height, hints)
+        // 设置空白边距的宽度
+        hints[EncodeHintType.MARGIN] = QRCode.getHintWhiteMargin() //default is 4，这里设置为1
+        // 数据content转换为数字矩阵
+        val bitMatrix = MultiFormatWriter().encode(content, QRCode.getBarCodeFormat(), width, height, hints)
 
         //矩阵生成二维码图片
+        val pixels = IntArray(width * height)
         for (y in 0 until height) {
             for (x in 0 until width) {
                 if (bitMatrix.get(x, y)) {
@@ -54,8 +56,10 @@ object QRCodeImage {
          */
 
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
-        logo?.let {
-            return setPersonalityLogo(bitmap, it)
+        if (QRCode.getHintErrorCorrection() == BarcodeFormat.QR_CODE) {
+            logo?.let {
+                return setPersonalityLogo(bitmap, it)
+            }
         }
 
         return bitmap

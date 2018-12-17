@@ -9,7 +9,7 @@ class EncodeAttribute {
     var qrCodeHeight: Int = 800
     var qrCodeWidth: Int = 800
     var qrCodeColor = Color.RED
-    var barcodeFormat = BarcodeFormat.QR_CODE
+    var barcodeFormat = BarcodeFormat.CODE_128
     var logoSize = 1 / 5f
     var isLogoNeedFrame = true
     var hintWhiteMargin = 1

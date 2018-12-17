@@ -9,6 +9,6 @@
 
     <application>
 
-        <activity android:name=".QRCodeScanActivity"/>
+        <activity android:name=".camera.QRCodeScanActivity"/>
     </application>
 </manifest>

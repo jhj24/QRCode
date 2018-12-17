@@ -149,6 +149,7 @@ public class QRCodeView extends View {
     private void matrixScan() {
         //渐变矩阵
         if (mMatrix != null) {
+
             if (mTransLate > getHeight()) { //渐变平移走到头，需要重新从头开始
                 mTransLate = -getHeight();
             }
