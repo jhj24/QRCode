@@ -2,6 +2,7 @@
           package="com.jhj.zxing">
 
     <!-- 往SDCard写入数据权限 -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <!--请求访问使用照相设备-->
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -9,6 +10,6 @@
 
     <application>
 
-        <activity android:name=".camera.QRCodeScanActivity"/>
+        <activity android:name=".QRCodeScanActivity"/>
     </application>
 </manifest>

@@ -6,6 +6,7 @@ import android.graphics.*;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
+import com.google.zxing.ResultPoint;
 import com.jhj.zxing.R;
 
 public class QRCodeView extends View {
@@ -161,4 +162,8 @@ public class QRCodeView extends View {
         mGradient.setLocalMatrix(mMatrix);
     }
 
+
+    public void addPossibleResultPoint(ResultPoint point) {
+
+    }
 }

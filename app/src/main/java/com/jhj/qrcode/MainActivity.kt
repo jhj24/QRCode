@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import com.jhj.zxing.camera.QRCodeScanActivity
+import com.jhj.zxing.QRCodeScanActivity
 import com.jhj.zxing.decode.DecodeHelper
 import com.jhj.zxing.encode.EncodeHelper
 import kotlinx.android.synthetic.main.activity_main.*
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
 
         btn_decode.setOnClickListener {
             val a = DecodeHelper.decode(bitmap)
-            toast(a)
+            toast(a?:"")
         }
     }
 }
