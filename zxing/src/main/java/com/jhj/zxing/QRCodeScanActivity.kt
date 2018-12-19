@@ -1,25 +1,17 @@
 package com.jhj.zxing
 
 import android.Manifest
-import android.content.DialogInterface
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.os.Bundle
-import android.os.Handler
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.view.SurfaceHolder
-import com.google.zxing.Result
 import com.jhj.zxing.camera.CameraManager
 import com.jhj.zxing.camera.CameraPermissionsUtil
-import com.jhj.zxing.decode.DecodeFormatManager
 import com.jhj.zxing.weight.QRCodeView
 import kotlinx.android.synthetic.main.fragment_qrcode_scanning.*
 import org.jetbrains.anko.toast
-import java.io.IOException
 
 
 class QRCodeScanActivity : AppCompatActivity() {
@@ -31,11 +23,11 @@ class QRCodeScanActivity : AppCompatActivity() {
 
     }
 
-    private var handler: CaptureActivityHandler? = null
     private var isHasSurface = false
+    /* private var handler: CaptureActivityHandler? = null
 
-    private lateinit var beepManager: BeepManager
-    private lateinit var inactivityTimer: InactivityTimer
+     private lateinit var beepManager: BeepManager
+     private lateinit var inactivityTimer: InactivityTimer*/
     private lateinit var surfaceHolder: SurfaceHolder
     private lateinit var cameraManager: CameraManager
 
@@ -44,15 +36,15 @@ class QRCodeScanActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_qrcode_scanning)
         surfaceHolder = surfaceView.holder
-        inactivityTimer = InactivityTimer(this);
-        beepManager = BeepManager(this)
-
-        requestPermissions(surfaceHolder)
+        /* inactivityTimer = InactivityTimer(this);
+         beepManager = BeepManager(this)*/
+        cameraManager = CameraManager(this)
+        surfaceHolder.addCallback(surfaceHolderCallback)
     }
-
+/*
     fun getHandler(): Handler? {
         return handler
-    }
+    }*/
 
     fun getCameraManager(): CameraManager {
         return cameraManager
@@ -75,10 +67,12 @@ class QRCodeScanActivity : AppCompatActivity() {
             if (!isHasSurface) {
                 isHasSurface = true;
                 requestPermissions(holder)
+                cameraManager.openDriver(holder)
             }
         }
 
     }
+
 
 
     fun requestPermissions(holder: SurfaceHolder?) {
@@ -106,38 +100,27 @@ class QRCodeScanActivity : AppCompatActivity() {
         if (cameraManager.isOpen) {
             return
         }
-        try {
-            cameraManager.openDriver(surfaceHolder)
-            if (handler == null) {
-                // handler = CaptureActivityHandler(this, decodeFormats, decodeHints, characterSet, cameraManager)
-                handler = CaptureActivityHandler(
-                    this, DecodeFormatManager.QR_CODE_FORMATS, null, "utf-8", cameraManager
-                )
-            }
+        /* try {
+             cameraManager.openDriver(surfaceHolder)
+             if (handler == null) {
+                 // handler = CaptureActivityHandler(this, decodeFormats, decodeHints, characterSet, cameraManager)
+                 handler = CaptureActivityHandler(
+                     this, DecodeFormatManager.QR_CODE_FORMATS, null, "utf-8", cameraManager
+                 )
+             }
 
-            //initCrop()
-        } catch (ioe: IOException) {
-            // Log.w(FragmentActivity.TAG, ioe)
-            displayFrameworkBugMessageAndExit()
-        } catch (e: RuntimeException) {
-            // Barcode Scanner has seen crashes in the wild of this variety:
-            // java.?lang.?RuntimeException: Fail to connect to camera service
-            //Log.w(FragmentActivity.TAG, "Unexpected error initializing camera", e)
-            displayFrameworkBugMessageAndExit()
-        }
-
-
-    }
+             //initCrop()
+         } catch (ioe: IOException) {
+             // Log.w(FragmentActivity.TAG, ioe)
+             displayFrameworkBugMessageAndExit()
+         } catch (e: RuntimeException) {
+             // Barcode Scanner has seen crashes in the wild of this variety:
+             // java.?lang.?RuntimeException: Fail to connect to camera service
+             //Log.w(FragmentActivity.TAG, "Unexpected error initializing camera", e)
+             displayFrameworkBugMessageAndExit()
+         }*/
 
 
-    private fun displayFrameworkBugMessageAndExit() {
-        // camera error
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("sdf")
-        builder.setMessage("Camera error")
-        builder.setPositiveButton("OK", DialogInterface.OnClickListener { dialog, which -> finish() })
-        builder.setOnCancelListener(DialogInterface.OnCancelListener { finish() })
-        builder.show()
     }
 
 
@@ -146,7 +129,7 @@ class QRCodeScanActivity : AppCompatActivity() {
     }
 
 
-    override fun onResume() {
+    /*override fun onResume() {
         super.onResume()
         cameraManager = CameraManager(getApplication());
         handler = null
@@ -158,9 +141,9 @@ class QRCodeScanActivity : AppCompatActivity() {
 
         inactivityTimer.onResume();
 
-    }
+    }*/
 
-
+/*
     override fun onPause() {
         if (handler != null) {
             handler?.quitSynchronously()
@@ -181,7 +164,7 @@ class QRCodeScanActivity : AppCompatActivity() {
         super.onDestroy()
         inactivityTimer.shutdown();
     }
-
+*/
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -190,12 +173,5 @@ class QRCodeScanActivity : AppCompatActivity() {
         }
     }
 
-    fun handleDecode(obj: Result, barcode: Bitmap, scaleFactor: Float) {
-        Log.w("xx", "xx")
-    }
-
-    fun drawViewfinder() {
-
-    }
 
 }

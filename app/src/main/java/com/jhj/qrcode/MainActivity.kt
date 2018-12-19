@@ -18,9 +18,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        btn_camera.setOnClickListener {
+       /* btn_camera.setOnClickListener {
             startActivity<QRCodeScanActivity>()
-        }
+        }*/
 
         val logoBitmap = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
         btn_encode.setOnClickListener {
@@ -31,7 +31,9 @@ class MainActivity : AppCompatActivity() {
 
         btn_decode.setOnClickListener {
             val a = DecodeHelper.decode(bitmap)
-            toast(a?:"")
+
+            toast(a ?: "")
         }
     }
+
 }

@@ -1,228 +1,233 @@
-/*
- * Copyright (C) 2008 ZXing authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.jhj.zxing.camera;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Point;
 import android.hardware.Camera;
-import android.util.Log;
 import android.view.Display;
+import android.view.Surface;
 import android.view.WindowManager;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
+import java.util.Collection;
 import java.util.List;
 
-/**
- * 邮箱: 1076559197@qq.com | tauchen1990@gmail.com
- * <p/>
- * 作者: 陈涛
- * <p/>
- * 日期: 2014年8月20日
- * <p/>
- * 描述: 该类主要负责设置相机的参数信息，获取最佳的预览界面
- */
-public final class CameraConfigurationManager {
+final class CameraConfigurationManager {
 
-  private static final String TAG = "CameraConfiguration";
+  private final Context mContext;
+  private Point mCameraResolution;
+  private Point mPreviewResolution;
 
-  private static final int MIN_PREVIEW_PIXELS = 480 * 320;
-  private static final double MAX_ASPECT_DISTORTION = 0.15;
-
-  private final Context context;
-
-  // 屏幕分辨率
-  private Point screenResolution;
-  // 相机分辨率
-  private Point cameraResolution;
-
-  public CameraConfigurationManager(Context context) {
-    this.context = context;
+  CameraConfigurationManager(Context context) {
+    mContext = context;
   }
 
-  public void initFromCameraParameters(Camera camera) {
-    Camera.Parameters parameters = camera.getParameters();
-    WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-    Display display = manager.getDefaultDisplay();
-    Point theScreenResolution = new Point();
-    theScreenResolution = getDisplaySize(display);
+  /**
+   * 自动聚焦
+   *
+   * @param camera Camera
+   * @return boolean
+   */
+  private static boolean autoFocusAble(Camera camera) {
+    List<String> supportedFocusModes = camera.getParameters().getSupportedFocusModes();
+    String focusMode = findSettableValue(supportedFocusModes, Camera.Parameters.FOCUS_MODE_AUTO);
+    return focusMode != null;
+  }
 
-    screenResolution = theScreenResolution;
-    Log.i(TAG, "Screen resolution: " + screenResolution);
+  private static String findSettableValue(Collection<String> supportedValues, String... desiredValues) {
+    String result = null;
+    if (supportedValues != null) {
+      for (String desiredValue : desiredValues) {
+        if (supportedValues.contains(desiredValue)) {
+          result = desiredValue;
+          break;
+        }
+      }
+    }
+    return result;
+  }
 
-    /** 因为换成了竖屏显示，所以不替换屏幕宽高得出的预览图是变形的 */
+  private static Point getPreviewResolution(Camera.Parameters parameters, Point screenResolution) {
+    Point previewResolution =
+            findBestPreviewSizeValue(parameters.getSupportedPreviewSizes(), screenResolution);
+    if (previewResolution == null) {
+      previewResolution = new Point((screenResolution.x >> 3) << 3, (screenResolution.y >> 3) << 3);
+    }
+    return previewResolution;
+  }
+
+  private static Point findBestPreviewSizeValue(List<Camera.Size> supportSizeList, Point screenResolution) {
+    int bestX = 0;
+    int bestY = 0;
+    int diff = Integer.MAX_VALUE;
+    for (Camera.Size previewSize : supportSizeList) {
+
+      int newX = previewSize.width;
+      int newY = previewSize.height;
+
+      int newDiff = Math.abs(newX - screenResolution.x) + Math.abs(newY - screenResolution.y);
+      if (newDiff == 0) {
+        bestX = newX;
+        bestY = newY;
+        break;
+      } else if (newDiff < diff) {
+        bestX = newX;
+        bestY = newY;
+        diff = newDiff;
+      }
+
+    }
+
+    if (bestX > 0 && bestY > 0) {
+      return new Point(bestX, bestY);
+    }
+    return null;
+  }
+
+  /**
+   * 是否为竖屏
+   */
+  public static boolean isPortrait(Context context) {
+    Point screenResolution = getScreenResolution(context);
+    return screenResolution.y > screenResolution.x;
+  }
+
+  static Point getScreenResolution(Context context) {
+    WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+    Display display = wm.getDefaultDisplay();
+    Point screenResolution = new Point();
+    display.getSize(screenResolution);
+    return screenResolution;
+  }
+
+  void initFromCameraParameters(Camera camera) {
+    Point screenResolution = getScreenResolution(mContext);
     Point screenResolutionForCamera = new Point();
     screenResolutionForCamera.x = screenResolution.x;
     screenResolutionForCamera.y = screenResolution.y;
 
-    if (screenResolution.x < screenResolution.y) {
+    if (isPortrait(mContext)) {
       screenResolutionForCamera.x = screenResolution.y;
       screenResolutionForCamera.y = screenResolution.x;
     }
 
-    cameraResolution = findBestPreviewSizeValue(parameters, screenResolutionForCamera);
-    Log.i(TAG, "Camera resolution x: " + cameraResolution.x);
-    Log.i(TAG, "Camera resolution y: " + cameraResolution.y);
-  }
+    mPreviewResolution = getPreviewResolution(camera.getParameters(), screenResolutionForCamera);
 
-  @SuppressWarnings("deprecation")
-  @SuppressLint("NewApi")
-  private Point getDisplaySize(final Display display) {
-    final Point point = new Point();
-    try {
-      display.getSize(point);
-    } catch (NoSuchMethodError ignore) {
-      point.x = display.getWidth();
-      point.y = display.getHeight();
+    if (isPortrait(mContext)) {
+      mCameraResolution = new Point(mPreviewResolution.y, mPreviewResolution.x);
+    } else {
+      mCameraResolution = mPreviewResolution;
     }
-    return point;
   }
 
-  public void setDesiredCameraParameters(Camera camera, boolean safeMode) {
+  Point getCameraResolution() {
+    return mCameraResolution;
+  }
+
+  void setDesiredCameraParameters(Camera camera) {
     Camera.Parameters parameters = camera.getParameters();
+    parameters.setPreviewSize(mPreviewResolution.x, mPreviewResolution.y);
 
-    if (parameters == null) {
-      Log.w(TAG, "Device error: no camera parameters are available. Proceeding without configuration.");
-      return;
+    // https://github.com/googlesamples/android-vision/blob/master/visionSamples/barcode-reader/app/src/main/java/com/google/android/gms/samples/vision/barcodereader/ui/camera/CameraSource.java
+    int[] previewFpsRange = selectPreviewFpsRange(camera, 60.0f);
+    if (previewFpsRange != null) {
+      parameters.setPreviewFpsRange(
+              previewFpsRange[Camera.Parameters.PREVIEW_FPS_MIN_INDEX],
+              previewFpsRange[Camera.Parameters.PREVIEW_FPS_MAX_INDEX]);
     }
 
-    Log.i(TAG, "Initial camera parameters: " + parameters.flatten());
-
-    if (safeMode) {
-      Log.w(TAG, "In camera config safe mode -- most settings will not be honored");
-    }
-
-    parameters.setPreviewSize(cameraResolution.x, cameraResolution.y);
+    camera.setDisplayOrientation(getDisplayOrientation());
     camera.setParameters(parameters);
-
-    Camera.Parameters afterParameters = camera.getParameters();
-    Camera.Size afterSize = afterParameters.getPreviewSize();
-    if (afterSize != null && (cameraResolution.x != afterSize.width || cameraResolution.y != afterSize
-            .height)) {
-      Log.w(TAG, "Camera said it supported preview size " + cameraResolution.x + 'x' +
-              cameraResolution.y + ", but after setting it, preview size is " + afterSize.width + 'x'
-              + afterSize.height);
-      cameraResolution.x = afterSize.width;
-      cameraResolution.y = afterSize.height;
-    }
-
-    /** 设置相机预览为竖屏 */
-    camera.setDisplayOrientation(90);
-  }
-
-  public Point getCameraResolution() {
-    return cameraResolution;
-  }
-
-  public Point getScreenResolution() {
-    return screenResolution;
   }
 
   /**
-   * 从相机支持的分辨率中计算出最适合的预览界面尺寸
+   * Selects the most suitable preview frames per second range, given the desired frames per
+   * second.
    *
-   * @param parameters
-   * @param screenResolution
-   * @return
+   * @param camera            the camera to select a frames per second range from
+   * @param desiredPreviewFps the desired frames per second for the camera preview frames
+   * @return the selected preview frames per second range
    */
-  private Point findBestPreviewSizeValue(Camera.Parameters parameters, Point screenResolution) {
-    List<Camera.Size> rawSupportedSizes = parameters.getSupportedPreviewSizes();
-    if (rawSupportedSizes == null) {
-      Log.w(TAG, "Device returned no supported preview sizes; using default");
-      Camera.Size defaultSize = parameters.getPreviewSize();
-      return new Point(defaultSize.width, defaultSize.height);
-    }
+  private int[] selectPreviewFpsRange(Camera camera, float desiredPreviewFps) {
+    // The camera API uses integers scaled by a factor of 1000 instead of floating-point frame
+    // rates.
+    int desiredPreviewFpsScaled = (int) (desiredPreviewFps * 1000.0f);
 
-    // Sort by size, descending
-    List<Camera.Size> supportedPreviewSizes = new ArrayList<Camera.Size>(rawSupportedSizes);
-    Collections.sort(supportedPreviewSizes, new Comparator<Camera.Size>() {
-      @Override
-      public int compare(Camera.Size a, Camera.Size b) {
-        int aPixels = a.height * a.width;
-        int bPixels = b.height * b.width;
-        if (bPixels < aPixels) {
-          return -1;
-        }
-        if (bPixels > aPixels) {
-          return 1;
-        }
-        return 0;
-      }
-    });
-
-    if (Log.isLoggable(TAG, Log.INFO)) {
-      StringBuilder previewSizesString = new StringBuilder();
-      for (Camera.Size supportedPreviewSize : supportedPreviewSizes) {
-        previewSizesString.append(supportedPreviewSize.width).append('x').append
-                (supportedPreviewSize.height).append(' ');
-      }
-      Log.i(TAG, "Supported preview sizes: " + previewSizesString);
-    }
-
-    double screenAspectRatio = (double) screenResolution.x / (double) screenResolution.y;
-
-    // Remove sizes that are unsuitable
-    Iterator<Camera.Size> it = supportedPreviewSizes.iterator();
-    while (it.hasNext()) {
-      Camera.Size supportedPreviewSize = it.next();
-      int realWidth = supportedPreviewSize.width;
-      int realHeight = supportedPreviewSize.height;
-      if (realWidth * realHeight < MIN_PREVIEW_PIXELS) {
-        it.remove();
-        continue;
-      }
-
-      boolean isCandidatePortrait = realWidth < realHeight;
-      int maybeFlippedWidth = isCandidatePortrait ? realHeight : realWidth;
-      int maybeFlippedHeight = isCandidatePortrait ? realWidth : realHeight;
-
-      double aspectRatio = (double) maybeFlippedWidth / (double) maybeFlippedHeight;
-      double distortion = Math.abs(aspectRatio - screenAspectRatio);
-      if (distortion > MAX_ASPECT_DISTORTION) {
-        it.remove();
-        continue;
-      }
-
-      if (maybeFlippedWidth == screenResolution.x && maybeFlippedHeight == screenResolution.y) {
-        Point exactPoint = new Point(realWidth, realHeight);
-        Log.i(TAG, "Found preview size exactly matching screen size: " + exactPoint);
-        return exactPoint;
+    // The method for selecting the best range is to minimize the sum of the differences between
+    // the desired value and the upper and lower bounds of the range.  This may select a range
+    // that the desired value is outside of, but this is often preferred.  For example, if the
+    // desired frame rate is 29.97, the range (30, 30) is probably more desirable than the
+    // range (15, 30).
+    int[] selectedFpsRange = null;
+    int minDiff = Integer.MAX_VALUE;
+    List<int[]> previewFpsRangeList = camera.getParameters().getSupportedPreviewFpsRange();
+    for (int[] range : previewFpsRangeList) {
+      int deltaMin = desiredPreviewFpsScaled - range[Camera.Parameters.PREVIEW_FPS_MIN_INDEX];
+      int deltaMax = desiredPreviewFpsScaled - range[Camera.Parameters.PREVIEW_FPS_MAX_INDEX];
+      int diff = Math.abs(deltaMin) + Math.abs(deltaMax);
+      if (diff < minDiff) {
+        selectedFpsRange = range;
+        minDiff = diff;
       }
     }
-
-    // If no exact match, use largest preview size. This was not a great
-    // idea on older devices because
-    // of the additional computation needed. We're likely to get here on
-    // newer Android 4+ devices, where
-    // the CPU is much more powerful.
-    if (!supportedPreviewSizes.isEmpty()) {
-      Camera.Size largestPreview = supportedPreviewSizes.get(0);
-      Point largestSize = new Point(largestPreview.width, largestPreview.height);
-      Log.i(TAG, "Using largest suitable preview size: " + largestSize);
-      return largestSize;
-    }
-
-    // If there is nothing at all suitable, return current preview size
-    Camera.Size defaultPreview = parameters.getPreviewSize();
-    Point defaultSize = new Point(defaultPreview.width, defaultPreview.height);
-    Log.i(TAG, "No suitable preview sizes, using default: " + defaultSize);
-
-    return defaultSize;
+    return selectedFpsRange;
   }
+
+  void openFlashlight(Camera camera) {
+    doSetTorch(camera, true);
+  }
+
+  void closeFlashlight(Camera camera) {
+    doSetTorch(camera, false);
+  }
+
+  private void doSetTorch(Camera camera, boolean newSetting) {
+    Camera.Parameters parameters = camera.getParameters();
+    String flashMode;
+    /** 是否支持闪光灯 */
+    if (newSetting) {
+      flashMode = findSettableValue(parameters.getSupportedFlashModes(), Camera.Parameters.FLASH_MODE_TORCH, Camera.Parameters.FLASH_MODE_ON);
+    } else {
+      flashMode = findSettableValue(parameters.getSupportedFlashModes(), Camera.Parameters.FLASH_MODE_OFF);
+    }
+    if (flashMode != null) {
+      parameters.setFlashMode(flashMode);
+    }
+    camera.setParameters(parameters);
+  }
+
+  private int getDisplayOrientation() {
+    Camera.CameraInfo info = new Camera.CameraInfo();
+    Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, info);
+    WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+    if (wm == null) {
+      return 0;
+    }
+    Display display = wm.getDefaultDisplay();
+
+    int rotation = display.getRotation();
+    int degrees = 0;
+    switch (rotation) {
+      case Surface.ROTATION_0:
+        degrees = 0;
+        break;
+      case Surface.ROTATION_90:
+        degrees = 90;
+        break;
+      case Surface.ROTATION_180:
+        degrees = 180;
+        break;
+      case Surface.ROTATION_270:
+        degrees = 270;
+        break;
+    }
+
+    int result;
+    if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+      result = (info.orientation + degrees) % 360;
+      result = (360 - result) % 360;
+    } else {
+      result = (info.orientation - degrees + 360) % 360;
+    }
+    return result;
+  }
+
 }
